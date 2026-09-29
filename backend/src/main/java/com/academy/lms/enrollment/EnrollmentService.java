@@ -1,0 +1,9 @@
+package com.academy.lms.enrollment;
+import com.academy.lms.audit.AuditService;import com.academy.lms.common.exception.ApiException;import com.academy.lms.course.*;import com.academy.lms.user.*;import jakarta.servlet.http.HttpServletRequest;import java.time.Instant;import java.util.*;import org.springframework.http.HttpStatus;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;
+@Service public class EnrollmentService {private final EnrollmentRepository enrollments;private final CourseRepository courses;private final UserRepository users;private final CourseMapper mapper;private final AuditService audit;public EnrollmentService(EnrollmentRepository e,CourseRepository c,UserRepository u,CourseMapper m,AuditService a){enrollments=e;courses=c;users=u;mapper=m;audit=a;}
+ @Transactional public EnrollmentDto enroll(UUID studentId,UUID courseId,HttpServletRequest req){Course c=courses.findById(courseId).orElseThrow(()->ApiException.notFound("Course"));if(c.getStatus()!=Course.Status.PUBLISHED)throw ApiException.notFound("Course");if(enrollments.existsByStudentIdAndCourseId(studentId,courseId))throw ApiException.conflict("Already enrolled in this course");User u=users.findById(studentId).orElseThrow();Enrollment e=enrollments.save(new Enrollment(u,c));audit.record(studentId,"COURSE_ENROLLED","COURSE",courseId,req.getRemoteAddr());return dto(e);}
+ @Transactional(readOnly=true) public List<EnrollmentDto> mine(UUID studentId){return enrollments.findByStudentIdOrderByEnrolledAtDesc(studentId).stream().map(this::dto).toList();}
+ private EnrollmentDto dto(Enrollment e){return new EnrollmentDto(e.getId(),mapper.summary(e.getCourse()),e.getProgress(),e.getEnrolledAt(),e.getCompletedAt());}
+ public record EnrollmentDto(UUID id,CourseDtos.Summary course,short progress,Instant enrolledAt,Instant completedAt){}
+}
+

@@ -1,0 +1,33 @@
+spring:
+  application.name: academy-lms
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lms}
+    username: ${DB_USER:lms}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate.ddl-auto: validate
+    properties.hibernate:
+      jdbc.time_zone: UTC
+      default_batch_fetch_size: 50
+  flyway.enabled: true
+  jackson.default-property-inclusion: non_null
+server:
+  port: ${PORT:8080}
+  tomcat:
+    max-http-form-post-size: 1MB
+    max-swallow-size: 1MB
+  servlet.session:
+    cookie:
+      http-only: true
+      secure: ${COOKIE_SECURE:false}
+      same-site: lax
+    timeout: 8h
+  error.include-message: never
+management.endpoints.web.exposure.include: health,info
+app:
+  cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+  seed-enabled: ${SEED_ENABLED:true}
+  seed-password: ${SEED_PASSWORD:}
+springdoc.swagger-ui.path: /docs
+springdoc.api-docs.path: /v3/api-docs

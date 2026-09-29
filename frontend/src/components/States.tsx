@@ -1,0 +1,5 @@
+import {AlertCircle,BookOpen} from 'lucide-react';
+export function LoadingCards(){return <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[1,2,3].map(i=><div key={i} className="card overflow-hidden"><div className="skeleton aspect-video"/><div className="p-5"><div className="skeleton h-4 w-24"/><div className="skeleton mt-4 h-7 w-4/5"/><div className="skeleton mt-3 h-12 w-full"/></div></div>)}</div>}
+export function Empty({title='Nothing here yet',message='Try changing your filters or check back soon.'}:{title?:string;message?:string}){return <div className="card grid place-items-center px-6 py-16 text-center"><div className="grid h-14 w-14 place-items-center rounded-2xl bg-mint/50 text-forest"><BookOpen/></div><h3 className="mt-4 font-display text-xl font-semibold">{title}</h3><p className="mt-2 text-sm text-stone-500">{message}</p></div>}
+export function ErrorState({message='We could not load this right now.'}:{message?:string}){return <div className="card flex items-center gap-3 border-red-200 bg-red-50 p-5 text-sm text-red-800"><AlertCircle/>{message}</div>}
+
