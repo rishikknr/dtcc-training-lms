@@ -1,3 +1,0 @@
-package com.academy.lms.review;import jakarta.validation.constraints.*;import java.time.Instant;import java.util.UUID;
-public final class ReviewDtos{private ReviewDtos(){}public record Create(@NotNull UUID courseId,@Min(1)@Max(5)short rating,@NotBlank@Size(max=2000)String comment){}public record Update(@Min(1)@Max(5)short rating,@NotBlank@Size(max=2000)String comment){}public record Moderate(@NotNull Review.Status status,@Size(max=500)String reason){}public record View(UUID id,UUID courseId,UUID studentId,String studentName,short rating,String comment,Review.Status status,String moderationReason,Instant createdAt,Instant updatedAt){} }
-

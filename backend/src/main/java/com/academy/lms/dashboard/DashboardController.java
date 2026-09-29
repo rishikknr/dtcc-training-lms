@@ -1,6 +1,0 @@
-package com.academy.lms.dashboard;
-import com.academy.lms.course.CourseRepository;import com.academy.lms.enrollment.EnrollmentRepository;import com.academy.lms.review.ReviewRepository;import com.academy.lms.security.CurrentUser;import com.academy.lms.user.UserRepository;import java.util.Map;import org.springframework.security.access.prepost.PreAuthorize;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api/dashboard") public class DashboardController {private final UserRepository users;private final CourseRepository courses;private final EnrollmentRepository enrollments;private final ReviewRepository reviews;public DashboardController(UserRepository u,CourseRepository c,EnrollmentRepository e,ReviewRepository r){users=u;courses=c;enrollments=e;reviews=r;}
- @GetMapping("/student")@PreAuthorize("hasRole('STUDENT')")Map<String,Object> student(Authentication a){var id=CurrentUser.id(a);return Map.of("enrollments",enrollments.findByStudentIdOrderByEnrolledAtDesc(id).size(),"message","Keep learning—small steps compound.");}
- @GetMapping("/admin")@PreAuthorize("hasRole('ADMIN')")Map<String,Long> admin(){return Map.of("users",users.count(),"courses",courses.count(),"enrollments",enrollments.count(),"reviews",reviews.count());}
-}

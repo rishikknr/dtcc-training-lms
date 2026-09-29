@@ -1,2 +1,0 @@
-package com.academy.lms.category;import java.util.*;import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api/categories") public class CategoryController {private final CategoryRepository repo;public CategoryController(CategoryRepository r){repo=r;}@GetMapping List<CategoryDto> all(){return repo.findAll().stream().map(c->new CategoryDto(c.getId(),c.getName(),c.getSlug(),c.getDescription())).toList();}public record CategoryDto(UUID id,String name,String slug,String description){} }

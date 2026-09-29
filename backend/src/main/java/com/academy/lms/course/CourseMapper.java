@@ -1,6 +1,0 @@
-package com.academy.lms.course;import java.util.*;import org.springframework.stereotype.Component;
-@Component public class CourseMapper {
- public CourseDtos.Summary summary(Course c){var cat=c.getCategory();return new CourseDtos.Summary(c.getId(),c.getTitle(),c.getSlug(),c.getShortDescription(),c.getLevel(),c.getThumbnailUrl(),c.getAverageRating(),c.getRatingCount(),cat==null?null:cat.getId(),cat==null?null:cat.getName(),c.getInstructor().getId(),c.getInstructor().getDisplayName());}
- public CourseDtos.Detail detail(Course c,boolean fullContent){var cat=c.getCategory();return new CourseDtos.Detail(c.getId(),c.getTitle(),c.getSlug(),c.getShortDescription(),c.getDescription(),c.getLevel(),c.getStatus(),c.getThumbnailUrl(),c.getAverageRating(),c.getRatingCount(),cat==null?null:new CourseDtos.CategoryRef(cat.getId(),cat.getName(),cat.getSlug()),new CourseDtos.InstructorRef(c.getInstructor().getId(),c.getInstructor().getDisplayName()),c.getSections().stream().map(s->new CourseDtos.Section(s.getId(),s.getTitle(),s.getPosition(),s.getLessons().stream().map(l->new CourseDtos.LessonItem(l.getId(),l.getTitle(),(fullContent||l.isPreview())?l.getContent():null,(fullContent||l.isPreview())?l.getVideoUrl():null,l.getPosition(),l.getDurationMinutes(),l.isPreview())).toList())).toList(),c.getCreatedAt(),c.getUpdatedAt());}
-}
-

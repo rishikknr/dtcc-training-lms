@@ -1,2 +1,0 @@
-package com.academy.lms.course;import java.text.Normalizer;import java.util.Locale;import org.springframework.stereotype.Component;
-@Component public class SlugService {private final CourseRepository courses;public SlugService(CourseRepository c){courses=c;}public String unique(String title){String base=Normalizer.normalize(title,Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+","-").replaceAll("(^-|-$)","");if(base.isBlank())base="course";String slug=base;int n=2;while(courses.existsBySlug(slug))slug=base+"-"+n++;return slug;}}

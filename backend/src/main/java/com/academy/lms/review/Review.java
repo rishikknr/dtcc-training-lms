@@ -1,8 +1,0 @@
-package com.academy.lms.review;
-import com.academy.lms.common.domain.AuditedEntity;import com.academy.lms.course.Course;import com.academy.lms.user.User;import jakarta.persistence.*;import java.time.Instant;
-@Entity @Table(name="reviews",uniqueConstraints=@UniqueConstraint(columnNames={"student_id","course_id"})) public class Review extends AuditedEntity {public enum Status{PUBLISHED,HIDDEN}
- @ManyToOne(fetch=FetchType.LAZY,optional=false)@JoinColumn(name="student_id")private User student;@ManyToOne(fetch=FetchType.LAZY,optional=false)@JoinColumn(name="course_id")private Course course;
- @Column(nullable=false)private short rating;@Column(nullable=false,length=2000)private String comment;@Enumerated(EnumType.STRING)@Column(nullable=false)private Status status=Status.PUBLISHED;
- @Column(name="moderation_reason",length=500)private String moderationReason;@ManyToOne(fetch=FetchType.LAZY)@JoinColumn(name="moderated_by")private User moderatedBy;@Column(name="moderated_at")private Instant moderatedAt;
- protected Review(){}public Review(User s,Course c,short r,String comment){student=s;course=c;rating=r;this.comment=comment;}public User getStudent(){return student;}public Course getCourse(){return course;}public short getRating(){return rating;}public String getComment(){return comment;}public Status getStatus(){return status;}public String getModerationReason(){return moderationReason;}public Instant getModeratedAt(){return moderatedAt;}public void update(short r,String c){rating=r;comment=c;}public void moderate(Status s,String reason,User by){status=s;moderationReason=reason;moderatedBy=by;moderatedAt=Instant.now();}}
-
