@@ -15,6 +15,8 @@ import com.academy.lms.curriculum.entity.Lesson;
 import com.academy.lms.curriculum.mapper.CurriculumMapper;
 import com.academy.lms.curriculum.repository.CourseSectionRepository;
 import com.academy.lms.curriculum.repository.LessonRepository;
+import com.academy.lms.enrollment.repository.EnrollmentRepository;
+import com.academy.lms.learning.repository.LessonProgressRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashSet;
 import java.util.List;
@@ -30,16 +32,21 @@ public class CurriculumService {
   private final CourseAuthorizationService authorization;
   private final CurriculumMapper mapper;
   private final AuditService audit;
+  private final EnrollmentRepository enrollments;
+  private final LessonProgressRepository progress;
 
   public CurriculumService(CourseRepository courses, CourseSectionRepository sections,
                            LessonRepository lessons, CourseAuthorizationService authorization,
-                           CurriculumMapper mapper, AuditService audit) {
+                           CurriculumMapper mapper, AuditService audit,
+                           EnrollmentRepository enrollments, LessonProgressRepository progress) {
     this.courses = courses;
     this.sections = sections;
     this.lessons = lessons;
     this.authorization = authorization;
     this.mapper = mapper;
     this.audit = audit;
+    this.enrollments = enrollments;
+    this.progress = progress;
   }
 
   @Transactional
@@ -100,6 +107,9 @@ public class CurriculumService {
     Lesson lesson = lessons.save(new Lesson(section, request.title(), request.content(),
         request.videoUrl(), Math.toIntExact(lessons.countBySectionId(sectionId)),
         request.durationMinutes(), request.preview()));
+    lesson.update(request.title(), request.description(), request.content(), request.videoUrl(),
+        request.resourceUrl(), request.durationMinutes(), request.preview(), request.published());
+    recalculateCourseProgress(section.getCourse().getId());
     section.addLesson(lesson);
     audit.record(actor, "LESSON_CREATED", "LESSON", lesson.getId(), http);
     return mapper.toLesson(lesson, true);
@@ -110,8 +120,9 @@ public class CurriculumService {
                                      HttpServletRequest http) {
     Lesson lesson = requireLesson(lessonId);
     authorization.requireManage(lesson.getSection().getCourse(), actor, admin);
-    lesson.update(request.title(), request.content(), request.videoUrl(), request.durationMinutes(),
-        request.preview());
+    lesson.update(request.title(), request.description(), request.content(), request.videoUrl(),
+        request.resourceUrl(), request.durationMinutes(), request.preview(), request.published());
+    recalculateCourseProgress(lesson.getSection().getCourse().getId());
     audit.record(actor, "LESSON_UPDATED", "LESSON", lessonId, http);
     return mapper.toLesson(lesson, true);
   }
@@ -124,6 +135,7 @@ public class CurriculumService {
     lessons.delete(lesson);
     lessons.flush();
     compactLessons(sectionId);
+    recalculateCourseProgress(lesson.getSection().getCourse().getId());
     audit.record(actor, "LESSON_DELETED", "LESSON", lessonId, http);
   }
 
@@ -176,5 +188,13 @@ public class CurriculumService {
 
   private Lesson requireLesson(UUID id) {
     return lessons.findById(id).orElseThrow(() -> ApiException.notFound("Lesson"));
+  }
+
+  private void recalculateCourseProgress(UUID courseId) {
+    long total = lessons.countBySectionCourseIdAndPublishedTrue(courseId);
+    enrollments.findByCourseId(courseId).forEach(enrollment -> {
+      long completed = progress.countPublishedByEnrollmentId(enrollment.getId());
+      enrollment.updateProgress(total == 0 ? 0 : (int) Math.round(completed * 100.0 / total));
+    });
   }
 }

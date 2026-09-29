@@ -13,8 +13,10 @@ public class LearningMapper {
     return new LearningCourseResponse(course.getId(), course.getTitle(), enrollment.getProgress(),
         course.getSections().stream().map(section -> new LearningCourseResponse.LearningSection(
             section.getId(), section.getTitle(), section.getPosition(),
-            section.getLessons().stream().map(lesson -> new LearningCourseResponse.LearningLesson(
-                lesson.getId(), lesson.getTitle(), lesson.getContent(), lesson.getVideoUrl(),
+            section.getLessons().stream().filter(lesson -> lesson.isPublished())
+                .map(lesson -> new LearningCourseResponse.LearningLesson(
+                lesson.getId(), lesson.getTitle(), lesson.getDescription(), lesson.getContent(),
+                lesson.getVideoUrl(), lesson.getResourceUrl(),
                 lesson.getPosition(), lesson.getDurationMinutes(),
                 completedLessonIds.contains(lesson.getId()))).toList())).toList());
   }

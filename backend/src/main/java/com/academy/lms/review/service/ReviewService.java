@@ -6,10 +6,12 @@ import com.academy.lms.common.exception.ApiException;
 import com.academy.lms.course.entity.Course;
 import com.academy.lms.course.repository.CourseRepository;
 import com.academy.lms.enrollment.repository.EnrollmentRepository;
+import com.academy.lms.enrollment.entity.EnrollmentStatus;
 import com.academy.lms.review.dto.request.CreateReviewRequest;
 import com.academy.lms.review.dto.request.ModerateReviewRequest;
 import com.academy.lms.review.dto.request.UpdateReviewRequest;
 import com.academy.lms.review.dto.response.ReviewResponse;
+import com.academy.lms.review.dto.response.ReviewSummaryResponse;
 import com.academy.lms.review.entity.Review;
 import com.academy.lms.review.entity.ReviewStatus;
 import com.academy.lms.review.mapper.ReviewMapper;
@@ -24,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.UUID;
+import java.util.LinkedHashMap;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -57,7 +60,8 @@ public class ReviewService {
 
   @Transactional
   public ReviewResponse create(UUID actorId, CreateReviewRequest request, HttpServletRequest http) {
-    if (!enrollments.existsByStudentIdAndCourseId(actorId, request.courseId())) {
+    if (!enrollments.existsByStudentIdAndCourseIdAndStatus(
+        actorId, request.courseId(), EnrollmentStatus.ACTIVE)) {
       throw ApiException.forbidden();
     }
     if (reviews.existsByStudentIdAndCourseId(actorId, request.courseId())) {
@@ -73,11 +77,41 @@ public class ReviewService {
   }
 
   @Transactional(readOnly = true)
-  public PageResponse<ReviewResponse> listPublished(UUID courseId, int page, int size) {
+  public PageResponse<ReviewResponse> listPublished(UUID courseId, int page, int size,
+                                                    String sort) {
+    Sort ordering = switch (sort == null ? "newest" : sort) {
+      case "oldest" -> Sort.by(Sort.Direction.ASC, "createdAt");
+      case "highest" -> Sort.by(Sort.Direction.DESC, "rating").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+      case "lowest" -> Sort.by(Sort.Direction.ASC, "rating").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+      default -> Sort.by(Sort.Direction.DESC, "createdAt");
+    };
     var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50),
-        Sort.by(Sort.Direction.DESC, "createdAt"));
+        ordering);
     return PageResponse.from(reviews.findByCourseIdAndStatus(courseId, ReviewStatus.PUBLISHED,
         pageable).map(mapper::toResponse));
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse<ReviewResponse> mine(UUID studentId, int page, int size) {
+    var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50),
+        Sort.by(Sort.Direction.DESC, "updatedAt"));
+    return PageResponse.from(reviews.findByStudentId(studentId, pageable).map(mapper::toResponse));
+  }
+
+  @Transactional(readOnly = true)
+  public ReviewSummaryResponse summary(UUID courseId) {
+    Object[] aggregate = reviews.aggregate(courseId);
+    Number average = aggregate != null && aggregate.length > 0 && aggregate[0] != null
+        ? (Number) aggregate[0] : BigDecimal.ZERO;
+    Number count = aggregate != null && aggregate.length > 1 && aggregate[1] != null
+        ? (Number) aggregate[1] : 0;
+    var distribution = new LinkedHashMap<Integer, Long>();
+    for (int rating = 5; rating >= 1; rating--) distribution.put(rating, 0L);
+    reviews.distribution(courseId).forEach(row ->
+        distribution.put(((Number) row[0]).intValue(), ((Number) row[1]).longValue()));
+    return new ReviewSummaryResponse(
+        BigDecimal.valueOf(average.doubleValue()).setScale(2, RoundingMode.HALF_UP),
+        count.longValue(), distribution);
   }
 
   @Transactional(readOnly = true)

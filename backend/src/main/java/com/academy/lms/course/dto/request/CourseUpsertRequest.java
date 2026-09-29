@@ -13,5 +13,9 @@ public record CourseUpsertRequest(
     @NotBlank @Size(max = 20_000) String description,
     @NotNull CourseLevel level,
     UUID categoryId,
-    @Size(max = 500) @ValidHttpUrl String thumbnailUrl
+    @Size(max = 500) @ValidHttpUrl String thumbnailUrl,
+    @Size(max = 5_000) String prerequisites,
+    @Size(max = 5_000) String learningObjectives,
+    @Size(max = 500) String tags,
+    @Size(max = 80) String language
 ) {}

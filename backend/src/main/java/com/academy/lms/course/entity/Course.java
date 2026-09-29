@@ -38,6 +38,10 @@ public class Course extends AuditedEntity {
   @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private CourseLevel level;
   @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private CourseStatus status = CourseStatus.DRAFT;
   @Column(name = "thumbnail_url", length = 500) private String thumbnailUrl;
+  @Column(columnDefinition = "text") private String prerequisites;
+  @Column(name = "learning_objectives", columnDefinition = "text") private String learningObjectives;
+  @Column(length = 500) private String tags;
+  @Column(nullable = false, length = 80) private String language = "English";
   @Column(name = "average_rating", nullable = false, precision = 3, scale = 2)
   private BigDecimal averageRating = BigDecimal.ZERO;
   @Column(name = "rating_count", nullable = false) private int ratingCount;
@@ -69,16 +73,31 @@ public class Course extends AuditedEntity {
   public BigDecimal getAverageRating() { return averageRating; }
   public int getRatingCount() { return ratingCount; }
   public Instant getPublishedAt() { return publishedAt; }
+  public String getPrerequisites() { return prerequisites; }
+  public String getLearningObjectives() { return learningObjectives; }
+  public String getTags() { return tags; }
+  public String getLanguage() { return language; }
   public List<CourseSection> getSections() { return List.copyOf(sections); }
 
   public void update(Category category, String title, String shortDescription,
                      String description, CourseLevel level, String thumbnailUrl) {
+    update(category, title, shortDescription, description, level, thumbnailUrl, null, null, null,
+        "English");
+  }
+
+  public void update(Category category, String title, String shortDescription,
+                     String description, CourseLevel level, String thumbnailUrl,
+                     String prerequisites, String learningObjectives, String tags, String language) {
     this.category = category;
     this.title = title.trim();
     this.shortDescription = shortDescription.trim();
     this.description = description.trim();
     this.level = level;
     this.thumbnailUrl = normalizeNullable(thumbnailUrl);
+    this.prerequisites = normalizeNullable(prerequisites);
+    this.learningObjectives = normalizeNullable(learningObjectives);
+    this.tags = normalizeNullable(tags);
+    this.language = language == null || language.isBlank() ? "English" : language.trim();
   }
 
   public void changeSlug(String slug) { this.slug = slug; }

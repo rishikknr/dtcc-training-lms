@@ -59,13 +59,13 @@ class CourseServiceAuthorizationTest {
     when(course.getInstructor()).thenReturn(owner);
     when(courses.findById(courseId)).thenReturn(Optional.of(course));
     var request = new CourseUpsertRequest("Title", "Short", "Description",
-        CourseLevel.BEGINNER, null, null);
+        CourseLevel.BEGINNER, null, null, null, null, null, "English");
 
     ApiException error = assertThrows(ApiException.class,
         () -> service.update(actorId, false, courseId, request, http));
 
     assertEquals(403, error.status().value());
-    verify(course, never()).update(any(), any(), any(), any(), any(), any());
+    verify(course, never()).update(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
   }
 
   @Test

@@ -85,14 +85,19 @@ Empty ceremonial layers are avoided. For example, `dashboard` has no entity beca
 
 1. An instructor creates a draft owned by their authenticated account.
 2. Only that instructor or an admin may change the course or its curriculum.
-3. Sections and lessons support create, edit, delete, and atomic full-list reordering.
-4. Publishing requires a category, cover image, section, and lesson.
+3. Sections and lessons support create, edit, delete, atomic full-list reordering, resources,
+   previews, and independent lesson publication.
+4. Publishing requires a category, cover image, section, and at least one published lesson.
 5. Published courses with learners cannot return to draft; they can be archived.
 6. Only empty drafts can be deleted, preventing accidental destruction of learner records.
 
 ### Learning and progress
 
-Only enrolled students receive protected lesson content from `/api/learning`. Completion is stored per enrollment and lesson. The enrollment aggregate is recalculated transactionally and reaches 100% only when every current lesson is complete.
+Only actively enrolled students receive protected, published lesson content from `/api/learning`.
+Students can cancel and later reactivate an enrollment without losing prior progress. Completion is
+stored per enrollment and lesson. The enrollment aggregate is recalculated transactionally when
+completion or published curriculum changes, and reaches 100% only when every current published
+lesson is complete.
 
 ### Reviews
 
@@ -109,13 +114,14 @@ Flyway is the sole schema authority and Hibernate runs with `ddl-auto=validate`.
 | Browse published courses | Yes | Yes | Yes |
 | Apply to teach | Yes | N/A | N/A |
 | Approve instructor access | No | No | Yes |
-| Enroll and learn | Yes | Student role required | Student role required |
+| Enroll, leave, re-enroll, and learn | Yes | Student role required | Student role required |
 | Review a course | Enrolled only | Student role required | Student role required |
 | Edit review | Own only | Own only if also student | Admin delete only |
 | Create course | No | Yes | Yes |
 | Manage course/curriculum | No | Own only | All |
 | Moderate reviews | No | Own courses only | All |
 | Manage users/categories | No | No | Yes |
+| View course student roster | No | Own only | All |
 | Read audit history | No | No | Yes |
 
 Frontend guards improve usability; method security and resource-level checks remain authoritative.

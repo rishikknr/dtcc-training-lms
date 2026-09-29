@@ -9,16 +9,23 @@ import org.springframework.stereotype.Component;
 @Component
 public class CurriculumMapper {
   public SectionResponse toSection(CourseSection section, boolean includeProtectedContent) {
+    return toSection(section, includeProtectedContent, includeProtectedContent);
+  }
+
+  public SectionResponse toSection(CourseSection section, boolean includeProtectedContent,
+                                   boolean includeUnpublished) {
     return new SectionResponse(section.getId(), section.getTitle(), section.getPosition(),
         section.getLessons().stream()
+            .filter(lesson -> includeUnpublished || lesson.isPublished())
             .map(lesson -> toLesson(lesson, includeProtectedContent || lesson.isPreview()))
             .toList());
   }
 
   public LessonResponse toLesson(Lesson lesson, boolean includeContent) {
-    return new LessonResponse(lesson.getId(), lesson.getTitle(),
+    return new LessonResponse(lesson.getId(), lesson.getTitle(), lesson.getDescription(),
         includeContent ? lesson.getContent() : null,
         includeContent ? lesson.getVideoUrl() : null,
-        lesson.getPosition(), lesson.getDurationMinutes(), lesson.isPreview());
+        includeContent ? lesson.getResourceUrl() : null,
+        lesson.getPosition(), lesson.getDurationMinutes(), lesson.isPreview(), lesson.isPublished());
   }
 }

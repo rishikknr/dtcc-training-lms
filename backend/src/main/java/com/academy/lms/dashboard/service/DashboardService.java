@@ -6,6 +6,7 @@ import com.academy.lms.dashboard.dto.response.AdminDashboardResponse;
 import com.academy.lms.dashboard.dto.response.InstructorDashboardResponse;
 import com.academy.lms.dashboard.dto.response.StudentDashboardResponse;
 import com.academy.lms.enrollment.repository.EnrollmentRepository;
+import com.academy.lms.enrollment.entity.EnrollmentStatus;
 import com.academy.lms.instructor.entity.InstructorApplicationStatus;
 import com.academy.lms.instructor.repository.InstructorApplicationRepository;
 import com.academy.lms.review.entity.ReviewStatus;
@@ -35,7 +36,8 @@ public class DashboardService {
 
   @Transactional(readOnly = true)
   public StudentDashboardResponse student(UUID studentId) {
-    var all = enrollments.findByStudentIdOrderByLastAccessedAtDesc(studentId);
+    var all = enrollments.findByStudentIdAndStatusOrderByLastAccessedAtDesc(
+        studentId, EnrollmentStatus.ACTIVE);
     long completed = all.stream().filter(item -> item.getProgress() == 100).count();
     int average = all.isEmpty() ? 0
         : (int) Math.round(all.stream().mapToInt(item -> item.getProgress()).average().orElse(0));

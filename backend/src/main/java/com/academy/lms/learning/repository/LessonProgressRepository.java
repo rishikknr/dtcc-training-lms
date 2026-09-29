@@ -10,4 +10,9 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
   List<LessonProgress> findByEnrollmentId(UUID enrollmentId);
   Optional<LessonProgress> findByEnrollmentIdAndLessonId(UUID enrollmentId, UUID lessonId);
   long countByEnrollmentId(UUID enrollmentId);
+
+  @org.springframework.data.jpa.repository.Query("select count(p) from LessonProgress p "
+      + "where p.enrollment.id = :enrollmentId and p.lesson.published = true")
+  long countPublishedByEnrollmentId(
+      @org.springframework.data.repository.query.Param("enrollmentId") UUID enrollmentId);
 }

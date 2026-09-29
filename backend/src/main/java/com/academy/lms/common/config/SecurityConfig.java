@@ -38,17 +38,19 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .csrf(csrf -> csrf
             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-            .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+            .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+            .ignoringRequestMatchers("/api/auth/login", "/api/auth/register"))
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers(HttpMethod.GET,
                 "/api/courses/**", "/api/categories/**", "/api/auth/csrf",
-                "/actuator/health", "/v3/api-docs/**", "/docs/**",
-                "/docs.html").permitAll()
+                "/actuator/health", "/v3/api-docs/**", "/v3/api-docs",
+                "/docs/**", "/docs", "/docs.html",
+                "/swagger-ui/**", "/swagger-ui.html").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
             .anyRequest().authenticated())
         .headers(headers -> headers
             .contentSecurityPolicy(csp -> csp.policyDirectives(
-                "default-src 'self'; frame-ancestors 'none'; object-src 'none'"))
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; object-src 'none'"))
             .frameOptions(frame -> frame.deny())
             .referrerPolicy(policy -> policy.policy(
                 ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))

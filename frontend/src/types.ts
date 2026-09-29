@@ -3,6 +3,7 @@ export type CourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export type ReviewStatus = 'PUBLISHED' | 'HIDDEN';
 export type InstructorApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type EnrollmentStatus = 'ACTIVE' | 'CANCELLED';
 
 export type User = {
   id: string;
@@ -41,11 +42,14 @@ export type CourseSummary = {
 export type Lesson = {
   id: string;
   title: string;
+  description?: string;
   content?: string;
   videoUrl?: string;
+  resourceUrl?: string;
   position: number;
   durationMinutes: number;
   preview: boolean;
+  published: boolean;
 };
 
 export type CourseSection = {
@@ -57,6 +61,11 @@ export type CourseSection = {
 
 export type Course = CourseSummary & {
   description: string;
+  prerequisites?: string;
+  learningObjectives?: string;
+  tags?: string;
+  language: string;
+  durationMinutes: number;
   category?: Category;
   instructor: { id: string; displayName: string };
   sections: CourseSection[];
@@ -90,10 +99,30 @@ export type Review = {
   updatedAt: string;
 };
 
+export type ReviewSummary = {
+  averageRating: number;
+  totalReviews: number;
+  distribution: Record<string, number>;
+};
+
 export type Enrollment = {
   id: string;
   course: CourseSummary;
   progress: number;
+  enrolledAt: string;
+  completedAt?: string;
+  lastAccessedAt: string;
+  status: EnrollmentStatus;
+  cancelledAt?: string;
+};
+
+export type CourseStudent = {
+  enrollmentId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  progress: number;
+  status: EnrollmentStatus;
   enrolledAt: string;
   completedAt?: string;
   lastAccessedAt: string;

@@ -28,13 +28,16 @@ public class CourseMapper {
     return new CourseDetailResponse(
         course.getId(), course.getTitle(), course.getSlug(), course.getShortDescription(),
         course.getDescription(), course.getLevel(), course.getStatus(), course.getThumbnailUrl(),
+        course.getPrerequisites(), course.getLearningObjectives(), course.getTags(),
+        course.getLanguage(), course.getSections().stream().flatMap(section -> section.getLessons().stream())
+            .filter(lesson -> lesson.isPublished()).mapToInt(lesson -> lesson.getDurationMinutes()).sum(),
         course.getAverageRating(), course.getRatingCount(),
         category == null ? null : new CourseDetailResponse.CategoryRef(
             category.getId(), category.getName(), category.getSlug()),
         new CourseDetailResponse.InstructorRef(course.getInstructor().getId(),
             course.getInstructor().getDisplayName()),
         course.getSections().stream()
-            .map(section -> curriculum.toSection(section, includeProtectedContent)).toList(),
+            .map(section -> curriculum.toSection(section, includeProtectedContent, manageable)).toList(),
         enrolled, manageable, course.getCreatedAt(), course.getUpdatedAt());
   }
 }

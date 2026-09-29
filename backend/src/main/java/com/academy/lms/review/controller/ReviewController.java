@@ -6,6 +6,7 @@ import com.academy.lms.review.dto.request.CreateReviewRequest;
 import com.academy.lms.review.dto.request.ModerateReviewRequest;
 import com.academy.lms.review.dto.request.UpdateReviewRequest;
 import com.academy.lms.review.dto.response.ReviewResponse;
+import com.academy.lms.review.dto.response.ReviewSummaryResponse;
 import com.academy.lms.review.entity.ReviewStatus;
 import com.academy.lms.review.service.ReviewService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,8 +42,21 @@ public class ReviewController {
   @GetMapping("/api/courses/{id}/reviews")
   public PageResponse<ReviewResponse> list(@PathVariable UUID id,
                                           @RequestParam(defaultValue = "0") int page,
-                                          @RequestParam(defaultValue = "10") int size) {
-    return service.listPublished(id, page, size);
+                                          @RequestParam(defaultValue = "10") int size,
+                                          @RequestParam(defaultValue = "newest") String sort) {
+    return service.listPublished(id, page, size, sort);
+  }
+
+  @GetMapping("/api/courses/{id}/reviews/summary")
+  public ReviewSummaryResponse summary(@PathVariable UUID id) { return service.summary(id); }
+
+  @GetMapping("/api/reviews/mine")
+  @PreAuthorize("hasRole('STUDENT')")
+  public PageResponse<ReviewResponse> mine(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size,
+      Authentication authentication) {
+    return service.mine(CurrentUser.id(authentication), page, size);
   }
 
   @GetMapping("/api/reviews/moderation")

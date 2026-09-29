@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, ChevronDown, Circle, PlayCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronDown, Circle, ExternalLink, PlayCircle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api, ApiError } from '../lib/api';
@@ -35,5 +35,5 @@ export default function Learning() {
 }
 
 function LessonView({ lesson, saving, toggle }: { lesson: LearningCourse['sections'][number]['lessons'][number]; saving: boolean; toggle: () => void }) {
-  return <><div className="aspect-video overflow-hidden rounded-3xl bg-ink shadow-soft">{lesson.videoUrl ? <video src={lesson.videoUrl} controls className="h-full w-full" /> : <div className="grid h-full place-items-center text-white"><div className="text-center"><PlayCircle className="mx-auto text-mint" size={56} /><p className="mt-3 text-sm text-white/60">Reading lesson</p></div></div>}</div><div className="mt-8 flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow">Current lesson</p><h2 className="mt-2 font-display text-3xl font-bold">{lesson.title}</h2></div><button disabled={saving} onClick={toggle} className={lesson.completed ? 'btn-primary' : 'btn-secondary'}>{lesson.completed ? <CheckCircle2 size={17} /> : <Circle size={17} />}{lesson.completed ? 'Completed' : 'Mark complete'}</button></div><article className="mt-7 whitespace-pre-line text-base leading-8 text-stone-700">{lesson.content}</article></>;
+  return <><div className="aspect-video overflow-hidden rounded-3xl bg-ink shadow-soft">{lesson.videoUrl ? <video src={lesson.videoUrl} controls className="h-full w-full" /> : <div className="grid h-full place-items-center text-white"><div className="text-center"><PlayCircle className="mx-auto text-mint" size={56} /><p className="mt-3 text-sm text-white/60">Reading lesson</p></div></div>}</div><div className="mt-8 flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow">Current lesson</p><h2 className="mt-2 font-display text-3xl font-bold">{lesson.title}</h2>{lesson.description && <p className="mt-2 text-stone-500">{lesson.description}</p>}</div><button disabled={saving} onClick={toggle} className={lesson.completed ? 'btn-primary' : 'btn-secondary'}>{lesson.completed ? <CheckCircle2 size={17} /> : <Circle size={17} />}{lesson.completed ? 'Completed' : 'Mark complete'}</button></div><article className="mt-7 whitespace-pre-line text-base leading-8 text-stone-700">{lesson.content}</article>{lesson.resourceUrl && <a href={lesson.resourceUrl} target="_blank" rel="noreferrer" className="btn-secondary mt-8"><ExternalLink size={16} /> Open lesson resource</a>}</>;
 }

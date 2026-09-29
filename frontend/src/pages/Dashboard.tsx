@@ -3,7 +3,7 @@ import { ArrowRight, BookOpen, ChartNoAxesColumnIncreasing, GraduationCap, Messa
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import type { AdminStats, CourseSummary, Enrollment, InstructorStats, Page, StudentStats } from '../types';
+import type { AdminStats, CourseSummary, Enrollment, InstructorStats, Page, Review, StudentStats } from '../types';
 import CourseCard from '../components/CourseCard';
 import { Empty, LoadingCards } from '../components/States';
 
@@ -22,6 +22,7 @@ function StudentDashboard() {
   const { user } = useAuth();
   const enrollments = useQuery({ queryKey: ['enrollments'], queryFn: () => api<Enrollment[]>('/api/enrollments') });
   const stats = useQuery({ queryKey: ['student-stats'], queryFn: () => api<StudentStats>('/api/dashboard/student') });
+  const reviews = useQuery({ queryKey: ['my-reviews'], queryFn: () => api<Page<Review>>('/api/reviews/mine?size=10') });
   return (
     <section className="container-page py-14">
       <Heading eyebrow="Your learning space" title={`Welcome back, ${user?.displayName.split(' ')[0]}.`} />
@@ -30,6 +31,7 @@ function StudentDashboard() {
         <div><h2 className="font-display text-2xl font-semibold">Continue learning</h2><div className="mt-5">{enrollments.isLoading ? <LoadingCards /> : !enrollments.data?.length ? <Empty title="Your next course is waiting" message="Explore the catalog and start building a new skill." /> : <div className="grid gap-5 md:grid-cols-2">{enrollments.data.map((enrollment) => <div key={enrollment.id} className="card overflow-hidden"><div className="p-5"><p className="text-xs font-semibold uppercase tracking-wider text-forest">{enrollment.course.categoryName}</p><h3 className="mt-2 font-display text-xl font-semibold">{enrollment.course.title}</h3><div className="mt-5 flex justify-between text-xs text-stone-500"><span>Progress</span><span>{enrollment.progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100"><div className="h-full rounded-full bg-coral transition-all" style={{ width: `${enrollment.progress}%` }} /></div><Link to={`/learn/${enrollment.course.id}`} className="btn-primary mt-5 w-full">Continue <ArrowRight size={16} /></Link></div></div>)}</div>}</div></div>
         <aside className="space-y-5"><div className="card bg-forest p-6 text-white"><Star className="text-mint" /><h3 className="mt-8 font-display text-2xl font-semibold">Keep the momentum</h3><p className="mt-3 text-sm leading-6 text-white/70">Complete one lesson today. Your progress is saved lesson by lesson.</p></div><div className="card p-6"><GraduationCap className="text-forest" /><h3 className="mt-5 font-display text-xl font-semibold">Have expertise to share?</h3><p className="mt-2 text-sm leading-6 text-stone-600">Apply for instructor access. An admin reviews every request.</p><Link to="/become-instructor" className="btn-secondary mt-5 w-full">Become an instructor</Link></div></aside>
       </div>
+      <div className="mt-12"><h2 className="font-display text-2xl font-semibold">Your reviews</h2>{reviews.data?.content.length ? <div className="mt-5 grid gap-4 md:grid-cols-2">{reviews.data.content.map((review) => <Link key={review.id} to={`/courses/${review.courseId}`} className="card p-5 transition hover:border-forest"><div className="flex items-center justify-between"><strong>{review.courseTitle}</strong><span className="text-amber-500">{'★'.repeat(review.rating)}</span></div><p className="mt-2 line-clamp-2 text-sm text-stone-600">{review.comment}</p><span className={`mt-3 inline-block text-xs font-semibold ${review.status === 'PUBLISHED' ? 'text-emerald-700' : 'text-amber-700'}`}>{review.status}</span></Link>)}</div> : <p className="mt-3 text-sm text-stone-500">Reviews you write for enrolled courses will appear here.</p>}</div>
     </section>
   );
 }

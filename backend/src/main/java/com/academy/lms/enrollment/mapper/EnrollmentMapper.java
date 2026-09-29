@@ -14,6 +14,6 @@ public class EnrollmentMapper {
   public EnrollmentResponse toResponse(Enrollment enrollment) {
     return new EnrollmentResponse(enrollment.getId(), courses.toSummary(enrollment.getCourse()),
         enrollment.getProgress(), enrollment.getEnrolledAt(), enrollment.getCompletedAt(),
-        enrollment.getLastAccessedAt());
+        enrollment.getLastAccessedAt(), enrollment.getStatus(), enrollment.getCancelledAt());
   }
 }

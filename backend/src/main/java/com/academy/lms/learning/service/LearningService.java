@@ -5,6 +5,7 @@ import com.academy.lms.common.exception.ApiException;
 import com.academy.lms.curriculum.entity.Lesson;
 import com.academy.lms.curriculum.repository.LessonRepository;
 import com.academy.lms.enrollment.entity.Enrollment;
+import com.academy.lms.enrollment.entity.EnrollmentStatus;
 import com.academy.lms.enrollment.repository.EnrollmentRepository;
 import com.academy.lms.learning.dto.request.LessonCompletionRequest;
 import com.academy.lms.learning.dto.response.LearningCourseResponse;
@@ -51,6 +52,7 @@ public class LearningService {
                                                 LessonCompletionRequest request,
                                                 HttpServletRequest http) {
     Lesson lesson = lessons.findById(lessonId).orElseThrow(() -> ApiException.notFound("Lesson"));
+    if (!lesson.isPublished()) throw ApiException.notFound("Lesson");
     Enrollment enrollment = requireEnrollment(studentId, lesson.getSection().getCourse().getId());
     var existing = progress.findByEnrollmentIdAndLessonId(enrollment.getId(), lessonId);
     if (request.completed() && existing.isEmpty()) {
@@ -59,7 +61,7 @@ public class LearningService {
       progress.delete(existing.get());
       progress.flush();
     }
-    long completedCount = progress.countByEnrollmentId(enrollment.getId());
+    long completedCount = progress.countPublishedByEnrollmentId(enrollment.getId());
     enrollment.updateProgress(calculatePercentage(enrollment, completedCount));
     audit.record(studentId, request.completed() ? "LESSON_COMPLETED" : "LESSON_REOPENED",
         "LESSON", lessonId, http);
@@ -67,12 +69,13 @@ public class LearningService {
   }
 
   private int calculatePercentage(Enrollment enrollment, long completedCount) {
-    long total = lessons.countBySectionCourseId(enrollment.getCourse().getId());
+    long total = lessons.countBySectionCourseIdAndPublishedTrue(enrollment.getCourse().getId());
     return total == 0 ? 0 : (int) Math.round(completedCount * 100.0 / total);
   }
 
   private Enrollment requireEnrollment(UUID studentId, UUID courseId) {
-    return enrollments.findByStudentIdAndCourseId(studentId, courseId)
+    return enrollments.findByStudentIdAndCourseIdAndStatus(studentId, courseId,
+            EnrollmentStatus.ACTIVE)
         .orElseThrow(() -> ApiException.forbidden());
   }
 }

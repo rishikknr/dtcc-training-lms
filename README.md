@@ -38,10 +38,10 @@ Roles cannot be selected during registration or changed from the frontend.
 - Secure registration, login/logout, profiles, and password changes
 - Admin-reviewed instructor onboarding and immediate account-state enforcement
 - Draft, publish, archive, guarded delete, search, filter, sort, and pagination
-- Full section/lesson create, edit, delete, and reorder workflows
-- Enrollment-gated learning content and per-lesson progress
+- Full section/lesson create, edit, delete, reorder, preview, visibility, and resource workflows
+- Active-enrollment-gated learning content, leave/rejoin lifecycle, rosters, and per-lesson progress
 - Student, instructor, and admin dashboards with real metrics
-- One-review-per-enrollment, owner edit/delete, scoped moderation, and rating aggregation
+- One-review-per-enrollment, owner edit/delete, scoped moderation, rating distributions, and aggregation
 - Admin user status, categories, courses, instructor applications, reviews, and audit history APIs
 - DTO-only APIs, resource authorization, audit logs, request validation, and optimistic locking
 

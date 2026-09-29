@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Check, ExternalLink, FileClock, FolderTree, Search, ShieldCheck, UserCog, X } from 'lucide-react';
+import { BookOpen, Check, ExternalLink, FileClock, FolderTree, Search, ShieldCheck, UserCog, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api, ApiError } from '../lib/api';
-import type { AdminUser, Category, InstructorApplication, Page } from '../types';
+import type { AdminUser, Category, CourseSummary, InstructorApplication, Page, Role } from '../types';
 
-type Tab = 'applications' | 'users' | 'categories' | 'audit';
+type Tab = 'applications' | 'users' | 'courses' | 'categories' | 'audit';
 type AuditLog = { id: number; actorId?: string; action: string; resourceType: string; resourceId?: string; ipAddress?: string; createdAt: string };
 
 export default function AdminConsole() {
@@ -17,12 +18,14 @@ export default function AdminConsole() {
       <div className="mt-8 flex flex-wrap gap-2" role="tablist">
         <TabButton active={tab === 'applications'} onClick={() => setTab('applications')}><ShieldCheck size={17} /> Instructor applications</TabButton>
         <TabButton active={tab === 'users'} onClick={() => setTab('users')}><UserCog size={17} /> Users</TabButton>
+        <TabButton active={tab === 'courses'} onClick={() => setTab('courses')}><BookOpen size={17} /> Courses</TabButton>
         <TabButton active={tab === 'categories'} onClick={() => setTab('categories')}><FolderTree size={17} /> Categories</TabButton>
         <TabButton active={tab === 'audit'} onClick={() => setTab('audit')}><FileClock size={17} /> Audit log</TabButton>
       </div>
       <div className="mt-6">
         {tab === 'applications' && <Applications />}
         {tab === 'users' && <Users />}
+        {tab === 'courses' && <Courses />}
         {tab === 'categories' && <Categories />}
         {tab === 'audit' && <AuditHistory />}
       </div>
@@ -81,11 +84,23 @@ function Applications() {
 
 function Users() {
   const [search, setSearch] = useState('');
+  const [role, setRole] = useState('');
+  const [enabled, setEnabled] = useState('');
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ['admin', 'users', search],
-    queryFn: () => api<Page<AdminUser>>(`/api/admin/users?${new URLSearchParams({ q: search, size: '50' })}`),
+    queryKey: ['admin', 'users', search, role, enabled],
+    queryFn: () => api<Page<AdminUser>>(`/api/admin/users?${new URLSearchParams({ q: search, role, enabled, size: '50' })}`),
   });
+  const updateRoles = useMutation({
+    mutationFn: ({ user, nextRoles }: { user: AdminUser; nextRoles: Role[] }) => api(`/api/admin/users/${user.id}/roles`, { method: 'PATCH', body: JSON.stringify({ roles: nextRoles }) }),
+    onSuccess: () => { toast.success('User roles updated'); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }); },
+    onError: (error: ApiError) => toast.error(error.message),
+  });
+  const toggleRole = (user: AdminUser, value: Role) => {
+    const next = user.roles.includes(value) ? user.roles.filter((item) => item !== value) : [...user.roles, value];
+    if (!next.length) return toast.error('A user must keep at least one role');
+    updateRoles.mutate({ user, nextRoles: next });
+  };
   const toggle = useMutation({
     mutationFn: (user: AdminUser) => api(`/api/admin/users/${user.id}/status`, { method: 'PATCH', body: JSON.stringify({ enabled: !user.enabled }) }),
     onSuccess: () => { toast.success('Account status updated'); queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }); },
@@ -94,19 +109,27 @@ function Users() {
 
   return (
     <div className="card overflow-hidden">
-      <div className="border-b p-5">
-        <label className="relative block max-w-md"><span className="sr-only">Search users</span><Search className="absolute left-4 top-3.5 text-stone-400" size={18} /><input className="input pl-11" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or email" /></label>
+      <div className="grid gap-3 border-b p-5 md:grid-cols-[1fr_180px_180px]">
+        <label className="relative block"><span className="sr-only">Search users</span><Search className="absolute left-4 top-3.5 text-stone-400" size={18} /><input className="input pl-11" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or email" /></label><select className="input" value={role} onChange={(event) => setRole(event.target.value)}><option value="">All roles</option><option>STUDENT</option><option>INSTRUCTOR</option><option>ADMIN</option></select><select className="input" value={enabled} onChange={(event) => setEnabled(event.target.value)}><option value="">Any status</option><option value="true">Active</option><option value="false">Disabled</option></select>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500"><tr><th className="px-5 py-4">User</th><th className="px-5 py-4">Roles</th><th className="px-5 py-4">Status</th><th className="px-5 py-4 text-right">Action</th></tr></thead>
           <tbody className="divide-y">
-            {query.data?.content.map((user) => <tr key={user.id}><td className="px-5 py-4"><span className="font-semibold">{user.displayName}</span><span className="block text-xs text-stone-500">{user.email}</span></td><td className="px-5 py-4">{user.roles.join(' · ')}</td><td className="px-5 py-4"><Status enabled={user.enabled} /></td><td className="px-5 py-4 text-right"><button disabled={toggle.isPending} onClick={() => toggle.mutate(user)} className="text-xs font-semibold text-forest hover:underline">{user.enabled ? 'Disable' : 'Enable'}</button></td></tr>)}
+            {query.data?.content.map((user) => <tr key={user.id}><td className="px-5 py-4"><span className="font-semibold">{user.displayName}</span><span className="block text-xs text-stone-500">{user.email}</span></td><td className="px-5 py-4"><div className="flex flex-wrap gap-1">{(['STUDENT', 'INSTRUCTOR', 'ADMIN'] as Role[]).map((item) => <button key={item} disabled={updateRoles.isPending} onClick={() => toggleRole(user, item)} className={`rounded-full px-2 py-1 text-[10px] font-semibold ${user.roles.includes(item) ? 'bg-forest text-white' : 'bg-stone-100 text-stone-500'}`}>{item}</button>)}</div></td><td className="px-5 py-4"><Status enabled={user.enabled} /></td><td className="px-5 py-4 text-right"><button disabled={toggle.isPending} onClick={() => toggle.mutate(user)} className="text-xs font-semibold text-forest hover:underline">{user.enabled ? 'Disable' : 'Enable'}</button></td></tr>)}
           </tbody>
         </table>
       </div>
     </div>
   );
+}
+
+function Courses() {
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const query = useQuery({ queryKey: ['managed', 'admin', search, status], queryFn: () => api<Page<CourseSummary>>('/api/courses/managed?size=100') });
+  const filtered = query.data?.content.filter((course) => (!search || `${course.title} ${course.instructorName}`.toLowerCase().includes(search.toLowerCase())) && (!status || course.status === status)) ?? [];
+  return <div className="card overflow-hidden"><div className="grid gap-3 border-b p-5 md:grid-cols-[1fr_200px]"><label className="relative"><Search className="absolute left-4 top-3.5 text-stone-400" size={18}/><input className="input pl-11" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search courses or instructors" /></label><select className="input" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option>DRAFT</option><option>PUBLISHED</option><option>ARCHIVED</option></select></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500"><tr><th className="px-5 py-4">Course</th><th className="px-5 py-4">Instructor</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Rating</th><th className="px-5 py-4" /></tr></thead><tbody className="divide-y">{filtered.map((course) => <tr key={course.id}><td className="px-5 py-4 font-semibold">{course.title}<span className="block text-xs font-normal text-stone-500">{course.categoryName ?? 'Uncategorized'}</span></td><td className="px-5 py-4">{course.instructorName}</td><td className="px-5 py-4">{course.status}</td><td className="px-5 py-4">{Number(course.averageRating).toFixed(1)} ({course.ratingCount})</td><td className="px-5 py-4 text-right"><Link to={`/instructor/courses/${course.id}`} className="text-xs font-semibold text-forest">Manage</Link></td></tr>)}</tbody></table>{!filtered.length && <p className="p-8 text-center text-sm text-stone-500">No courses match these filters.</p>}</div></div>;
 }
 
 function Categories() {

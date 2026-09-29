@@ -29,5 +29,10 @@ app:
   cors-origins: ${CORS_ORIGINS:http://localhost:5173}
   seed-enabled: ${SEED_ENABLED:true}
   seed-password: ${SEED_PASSWORD:}
-springdoc.swagger-ui.path: /docs
-springdoc.api-docs.path: /v3/api-docs
+# springdoc / openapi configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+

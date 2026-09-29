@@ -1,12 +1,15 @@
 package com.academy.lms.enrollment.service;
 
 import com.academy.lms.common.audit.AuditService;
+import com.academy.lms.common.api.PageResponse;
 import com.academy.lms.common.exception.ApiException;
 import com.academy.lms.course.entity.Course;
 import com.academy.lms.course.entity.CourseStatus;
 import com.academy.lms.course.repository.CourseRepository;
 import com.academy.lms.enrollment.dto.response.EnrollmentResponse;
+import com.academy.lms.enrollment.dto.response.CourseStudentResponse;
 import com.academy.lms.enrollment.entity.Enrollment;
+import com.academy.lms.enrollment.entity.EnrollmentStatus;
 import com.academy.lms.enrollment.mapper.EnrollmentMapper;
 import com.academy.lms.enrollment.repository.EnrollmentRepository;
 import com.academy.lms.user.entity.User;
@@ -15,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -41,8 +46,14 @@ public class EnrollmentService {
     if (course.getInstructor().getId().equals(studentId)) {
       throw ApiException.conflict("Course instructors cannot enroll in their own course");
     }
-    if (enrollments.existsByStudentIdAndCourseId(studentId, courseId)) {
-      throw ApiException.conflict("Already enrolled in this course");
+    Enrollment existing = enrollments.findByStudentIdAndCourseId(studentId, courseId).orElse(null);
+    if (existing != null) {
+      if (existing.getStatus() == EnrollmentStatus.ACTIVE) {
+        throw ApiException.conflict("Already enrolled in this course");
+      }
+      existing.reactivate();
+      audit.record(studentId, "COURSE_REENROLLED", "COURSE", courseId, http);
+      return mapper.toResponse(existing);
     }
     User student = users.findById(studentId).orElseThrow(() -> ApiException.notFound("User"));
     Enrollment enrollment = enrollments.save(new Enrollment(student, course));
@@ -52,7 +63,32 @@ public class EnrollmentService {
 
   @Transactional(readOnly = true)
   public List<EnrollmentResponse> mine(UUID studentId) {
-    return enrollments.findByStudentIdOrderByLastAccessedAtDesc(studentId).stream()
+    return enrollments.findByStudentIdAndStatusOrderByLastAccessedAtDesc(
+            studentId, EnrollmentStatus.ACTIVE).stream()
         .map(mapper::toResponse).toList();
+  }
+
+  @Transactional
+  public EnrollmentResponse cancel(UUID studentId, UUID courseId, HttpServletRequest http) {
+    Enrollment enrollment = enrollments.findByStudentIdAndCourseIdAndStatus(
+            studentId, courseId, EnrollmentStatus.ACTIVE)
+        .orElseThrow(() -> ApiException.notFound("Active enrollment"));
+    enrollment.cancel();
+    audit.record(studentId, "COURSE_ENROLLMENT_CANCELLED", "COURSE", courseId, http);
+    return mapper.toResponse(enrollment);
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse<CourseStudentResponse> courseStudents(UUID actorId, boolean admin,
+                                                             UUID courseId, int page, int size) {
+    Course course = courses.findById(courseId).orElseThrow(() -> ApiException.notFound("Course"));
+    if (!admin && !course.getInstructor().getId().equals(actorId)) throw ApiException.forbidden();
+    var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
+        Sort.by(Sort.Direction.DESC, "enrolledAt"));
+    return PageResponse.from(enrollments.findByCourseId(courseId, pageable).map(enrollment ->
+        new CourseStudentResponse(enrollment.getId(), enrollment.getStudent().getId(),
+            enrollment.getStudent().getDisplayName(), enrollment.getStudent().getEmail(),
+            enrollment.getProgress(), enrollment.getStatus(), enrollment.getEnrolledAt(),
+            enrollment.getCompletedAt(), enrollment.getLastAccessedAt())));
   }
 }

@@ -5,6 +5,7 @@ import com.academy.lms.common.exception.ApiException;
 import com.academy.lms.course.entity.Course;
 import com.academy.lms.course.repository.CourseRepository;
 import com.academy.lms.enrollment.repository.EnrollmentRepository;
+import com.academy.lms.enrollment.entity.EnrollmentStatus;
 import com.academy.lms.review.dto.request.CreateReviewRequest;
 import com.academy.lms.review.dto.request.ModerateReviewRequest;
 import com.academy.lms.review.dto.request.UpdateReviewRequest;
@@ -55,7 +56,8 @@ class ReviewServiceAuthorizationTest {
   void nonEnrolledStudentCannotReview() {
     UUID actorId = UUID.randomUUID();
     UUID courseId = UUID.randomUUID();
-    when(enrollments.existsByStudentIdAndCourseId(actorId, courseId)).thenReturn(false);
+    when(enrollments.existsByStudentIdAndCourseIdAndStatus(
+        actorId, courseId, EnrollmentStatus.ACTIVE)).thenReturn(false);
 
     ApiException error = assertThrows(ApiException.class,
         () -> service.create(actorId, new CreateReviewRequest(courseId, (short) 5, "Useful"), http));

@@ -1,8 +1,11 @@
 package com.academy.lms.common.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,11 +13,24 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
   @Bean
   OpenAPI academyApi() {
-    return new OpenAPI().info(new Info()
-        .title("Academy LMS API")
-        .version("2.0.0")
-        .description("Session-authenticated LMS REST API. Fetch /api/auth/csrf and send the "
-            + "X-XSRF-TOKEN header on state-changing requests.")
-        .contact(new Contact().name("Academy Platform Team")));
+    return new OpenAPI()
+        .info(new Info()
+            .title("Academy LMS API")
+            .version("2.0.0")
+            .description("Session-authenticated LMS REST API. Fetch /api/auth/csrf and send the "
+                + "X-XSRF-TOKEN header on state-changing requests.")
+            .contact(new Contact().name("Academy Platform Team")))
+        .components(new Components()
+            .addSecuritySchemes("cookieAuth", new SecurityScheme()
+                .type(SecurityScheme.Type.APIKEY)
+                .in(SecurityScheme.In.COOKIE)
+                .name("JSESSIONID")
+                .description("Session cookie received after login"))
+            .addSecuritySchemes("csrfToken", new SecurityScheme()
+                .type(SecurityScheme.Type.APIKEY)
+                .in(SecurityScheme.In.HEADER)
+                .name("X-XSRF-TOKEN")
+                .description("CSRF token fetched from /api/auth/csrf")))
+        .addSecurityItem(new SecurityRequirement().addList("cookieAuth").addList("csrfToken"));
   }
 }

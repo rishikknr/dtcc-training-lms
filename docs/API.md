@@ -29,19 +29,24 @@ All state-changing browser requests require `X-XSRF-TOKEN`, obtained from `GET /
 - `PUT|DELETE /api/lessons/{id}`
 - `PUT /api/sections/{id}/lessons/order`
 
+Course writes support prerequisites, learning objectives, tags, and language. Lessons support a
+description, video/resource URLs, preview access, duration, and independent published visibility.
+
 ## Enrollment, learning, and reviews
 
-- `POST /api/courses/{id}/enroll`, `GET /api/enrollments`
+- `POST /api/courses/{id}/enroll`, `DELETE /api/courses/{id}/enrollment`, `GET /api/enrollments`
+- `GET /api/courses/{id}/students` — course owner or admin
 - `GET /api/learning/courses/{id}`
 - `PUT /api/learning/lessons/{id}/completion`
-- `POST /api/reviews`, `GET /api/courses/{id}/reviews`
+- `POST /api/reviews`, `GET /api/courses/{id}/reviews`, `GET /api/courses/{id}/reviews/summary`
+- `GET /api/reviews/mine`
 - `PUT|DELETE /api/reviews/{id}`
 - `GET /api/reviews/moderation`, `POST /api/reviews/{id}/moderate`
 
 ## Administration and dashboards
 
 - `GET /api/dashboard/student|instructor|admin`
-- `GET /api/admin/users`, `PATCH /api/admin/users/{id}/status`
+- `GET /api/admin/users`, `PATCH /api/admin/users/{id}/status|roles`
 - `POST|PUT|DELETE /api/categories...` — admin; category list is public
 - `GET /api/admin/audit-logs`
 

@@ -22,6 +22,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -177,6 +178,24 @@ class ApiSecurityIntegrationTest {
     mvc.perform(get("/api/learning/courses/{id}", courseId).session(student))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.progress").value(50));
+  }
+
+  @Test
+  void cancellingEnrollmentRevokesLearningAndReenrollmentRestoresAccess() throws Exception {
+    MockHttpSession student = login("student@academy.local", TEST_PASSWORD);
+    String courseId = reviews.findAll().getFirst().getCourse().getId().toString();
+
+    mvc.perform(delete("/api/courses/{id}/enrollment", courseId).session(student).with(csrf()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("CANCELLED"));
+    mvc.perform(get("/api/learning/courses/{id}", courseId).session(student))
+        .andExpect(status().isForbidden());
+
+    mvc.perform(post("/api/courses/{id}/enroll", courseId).session(student).with(csrf()))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.status").value("ACTIVE"));
+    mvc.perform(get("/api/learning/courses/{id}", courseId).session(student))
+        .andExpect(status().isOk());
   }
 
   @Test

@@ -3,6 +3,8 @@ package com.academy.lms.user.controller;
 import com.academy.lms.common.api.PageResponse;
 import com.academy.lms.common.security.CurrentUser;
 import com.academy.lms.user.dto.request.UpdateUserStatusRequest;
+import com.academy.lms.user.dto.request.UpdateUserRolesRequest;
+import com.academy.lms.user.entity.RoleName;
 import com.academy.lms.user.dto.response.AdminUserResponse;
 import com.academy.lms.user.service.AdminUserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,9 +31,11 @@ public class AdminUserController {
   @GetMapping
   public PageResponse<AdminUserResponse> list(
       @RequestParam(required = false) String q,
+      @RequestParam(required = false) RoleName role,
+      @RequestParam(required = false) Boolean enabled,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    return service.list(q, page, size);
+    return service.list(q, role, enabled, page, size);
   }
 
   @PatchMapping("/{id}/status")
@@ -39,5 +43,12 @@ public class AdminUserController {
                                         @Valid @RequestBody UpdateUserStatusRequest request,
                                         Authentication authentication, HttpServletRequest http) {
     return service.updateStatus(CurrentUser.id(authentication), id, request, http);
+  }
+
+  @PatchMapping("/{id}/roles")
+  public AdminUserResponse updateRoles(@PathVariable UUID id,
+                                       @Valid @RequestBody UpdateUserRolesRequest request,
+                                       Authentication authentication, HttpServletRequest http) {
+    return service.updateRoles(CurrentUser.id(authentication), id, request, http);
   }
 }

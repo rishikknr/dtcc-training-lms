@@ -19,6 +19,7 @@ import com.academy.lms.course.repository.CourseRepository;
 import com.academy.lms.course.security.authorization.CourseAuthorizationService;
 import com.academy.lms.course.validation.CoursePublishingValidator;
 import com.academy.lms.enrollment.repository.EnrollmentRepository;
+import com.academy.lms.enrollment.entity.EnrollmentStatus;
 import com.academy.lms.user.entity.RoleName;
 import com.academy.lms.user.entity.User;
 import com.academy.lms.user.repository.UserRepository;
@@ -97,7 +98,8 @@ public class CourseService {
     boolean admin = hasRole(authentication, "ADMIN");
     boolean manageable = authorization.canManage(course, actorId, admin);
     if (course.getStatus() != CourseStatus.PUBLISHED && !manageable) throw ApiException.notFound("Course");
-    boolean enrolled = actorId != null && enrollments.existsByStudentIdAndCourseId(actorId, id);
+    boolean enrolled = actorId != null && enrollments.existsByStudentIdAndCourseIdAndStatus(
+        actorId, id, EnrollmentStatus.ACTIVE);
     return mapper.toDetail(course, manageable || enrolled, enrolled, manageable);
   }
 
@@ -109,6 +111,9 @@ public class CourseService {
     Course course = courses.save(new Course(actor, category, request.title(),
         slugs.unique(request.title()), request.shortDescription(), request.description(),
         request.level(), request.thumbnailUrl()));
+    course.update(category, request.title(), request.shortDescription(), request.description(),
+        request.level(), request.thumbnailUrl(), request.prerequisites(), request.learningObjectives(),
+        request.tags(), request.language());
     audit.record(actorId, "COURSE_CREATED", "COURSE", course.getId(), http);
     return mapper.toDetail(course, true, false, true);
   }
@@ -119,13 +124,14 @@ public class CourseService {
     Course course = requireManaged(actorId, admin, id);
     String oldTitle = course.getTitle();
     course.update(categories.require(request.categoryId()), request.title(),
-        request.shortDescription(), request.description(), request.level(), request.thumbnailUrl());
+        request.shortDescription(), request.description(), request.level(), request.thumbnailUrl(),
+        request.prerequisites(), request.learningObjectives(), request.tags(), request.language());
     if (!oldTitle.equalsIgnoreCase(request.title().trim())) {
       course.changeSlug(slugs.unique(request.title()));
     }
     audit.record(actorId, "COURSE_UPDATED", "COURSE", id, http);
     return mapper.toDetail(course, true,
-        enrollments.existsByStudentIdAndCourseId(actorId, id), true);
+        enrollments.existsByStudentIdAndCourseIdAndStatus(actorId, id, EnrollmentStatus.ACTIVE), true);
   }
 
   @Transactional
@@ -143,7 +149,7 @@ public class CourseService {
     audit.record(actorId, "COURSE_STATUS_CHANGED", "COURSE", id,
         Map.of("status", target.name()), http);
     return mapper.toDetail(course, true,
-        enrollments.existsByStudentIdAndCourseId(actorId, id), true);
+        enrollments.existsByStudentIdAndCourseIdAndStatus(actorId, id, EnrollmentStatus.ACTIVE), true);
   }
 
   @Transactional
